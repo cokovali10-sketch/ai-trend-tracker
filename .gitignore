@@ -1,0 +1,20 @@
+# Виртуальное окружение
+venv/
+.venv/
+env/
+
+# Файл с секретами (API-ключи)
+.env
+
+# Python кеш
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

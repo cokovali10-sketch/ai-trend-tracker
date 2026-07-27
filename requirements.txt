@@ -1,0 +1,12 @@
+# === AI Trend Tracker ===
+
+# Парсинг RSS
+feedparser>=6.0,<7.0
+requests>=2.31,<3.0
+
+# ИИ-клиенты
+openai>=1.0,<2.0
+google-generativeai>=0.8,<1.0
+
+# Конфигурация
+python-dotenv>=1.0,<2.0

@@ -1,10 +1,12 @@
 """
 Модуль ИИ-аналитики — отправляет текст статей в LLM и получает суммаризацию.
-Поддерживает OpenAI и Google Gemini.
+Поддерживает Gemini (по умолчанию) и OpenAI.
 """
 
+import time
 from openai import OpenAI
-import google.generativeai as genai
+from google import genai
+from google.genai import types, errors as genai_errors
 
 from src.config import (
     OPENAI_API_KEY,
@@ -44,6 +46,33 @@ SYSTEM_PROMPT = """
 В конце можешь добавить раздел "📈 Краткий вывод:" — одно предложение с общей картиной дня.
 """
 
+# Максимальное количество повторов при превышении квоты
+_MAX_RETRIES = 3
+_RETRY_DELAY = 10  # секунд между повторами
+
+
+def _call_with_retry(fn, *args, **kwargs):
+    """Вызывает fn с повторными попытками при ошибках квоты/таймаута."""
+    last_error = None
+    for attempt in range(1, _MAX_RETRIES + 1):
+        try:
+            return fn(*args, **kwargs)
+        except genai_errors.ClientError as e:
+            last_error = e
+            if attempt < _MAX_RETRIES and e.code == 429:
+                wait = _RETRY_DELAY * (2 ** (attempt - 1))
+                print(f"⚠️  Квота Gemini: повтор через {wait}с (попытка {attempt}/{_MAX_RETRIES})...")
+                time.sleep(wait)
+            else:
+                raise
+        except genai_errors.APIError as e:
+            last_error = e
+            if attempt < _MAX_RETRIES:
+                wait = _RETRY_DELAY * (2 ** (attempt - 1))
+                print(f"⚠️  Ошибка API Gemini: {e}, повтор через {wait}с...")
+                time.sleep(wait)
+    raise last_error
+
 
 def analyze_with_openai(articles_text: str) -> str:
     """Отправляет текст статей в OpenAI и возвращает ответ."""
@@ -54,22 +83,26 @@ def analyze_with_openai(articles_text: str) -> str:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"Статьи для анализа:\n\n{articles_text}"},
         ],
-        temperature=0.3,  # низкая температура — более фактологичный ответ
+        temperature=0.3,
     )
     return response.choices[0].message.content
 
 
 def analyze_with_gemini(articles_text: str) -> str:
-    """Отправляет текст статей в Google Gemini и возвращает ответ."""
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel(
-        model_name=GEMINI_MODEL,
-        system_instruction=SYSTEM_PROMPT,
-    )
-    response = model.generate_content(
-        f"Статьи для анализа:\n\n{articles_text}",
-    )
-    return response.text
+    """Отправляет текст статей в Google Gemini (новый SDK google.genai)."""
+    client = genai.Client(api_key=GEMINI_API_KEY)
+
+    def _do_request():
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=f"Статьи для анализа:\n\n{articles_text}",
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT,
+            ),
+        )
+        return response.text
+
+    return _call_with_retry(_do_request)
 
 
 def analyze(articles_text: str) -> str:
@@ -82,9 +115,13 @@ def analyze(articles_text: str) -> str:
     if AI_PROVIDER == "gemini":
         if not GEMINI_API_KEY:
             return "[ОШИБКА] Не указан GEMINI_API_KEY в .env"
-        return analyze_with_gemini(articles_text)
+        try:
+            return analyze_with_gemini(articles_text)
+        except genai_errors.ClientError:
+            return ("[ОШИБКА] Исчерпана квота Gemini API. "
+                    "Попробуй другую модель (например, gemini-2.0-flash-lite) "
+                    "или подключи платёжный аккаунт: https://aistudio.google.com/apikey")
 
-    # По умолчанию — OpenAI
     if not OPENAI_API_KEY:
         return "[ОШИБКА] Не указан OPENAI_API_KEY в .env"
     return analyze_with_openai(articles_text)

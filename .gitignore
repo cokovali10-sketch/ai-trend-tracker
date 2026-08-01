@@ -2,45 +2,47 @@
 # AI Trend Tracker — .gitignore
 # =============================================
 
-# --- Секреты и конфиденциальные данные ---
-# Файл .env содержит API-ключи — НИКОГДА не должен попадать в git
+# --- Секреты ---
 .env
 
-# --- Виртуальное окружение Python ---
+# --- Виртуальные окружения ---
 venv/
 .venv/
 env/
 virtualenv/
 
-# --- Python-кеш и байткод ---
+# --- Python-кеш ---
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+.pytest_cache/
 
-# --- Локальная база данных (SQLite) ---
-# Не коммитим БД — она создаётся автоматически на каждой машине
+# --- Локальные данные ---
 data/*.db
 data/*.db-journal
+data/*.db-wal
+data/*.db-shm
 data/*.sqlite3
+data/reports/
+logs/
 *.sqlite
 *.sqlite3
 
-# --- Настройки IDE и редакторов ---
+# --- IDE ---
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
-.DS_Store
 
-# --- Дистрибутивы и сборки ---
-*.egg-info/
+# --- Сборки и пакеты ---
 dist/
 build/
+*.egg-info/
 *.egg
 
 # --- OS-мусор ---
-Thumbs.db
 .DS_Store
+Thumbs.db
 Desktop.ini

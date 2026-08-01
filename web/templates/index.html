@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ app_name }} · Дашборд</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>📊 {{ app_name }}</h1>
+    <span class="badge" id="provider-badge">{{ provider }}</span>
+    <button id="run-btn" onclick="runAnalysis()">▶ Запустить анализ</button>
+    <span id="job-status" class="job-status"></span>
+  </header>
+
+  <main>
+    <section class="cards">
+      <div class="card"><h3>Обработано статей</h3><p id="stat-processed">—</p></div>
+      <div class="card"><h3>Сегодня</h3><p id="stat-today">—</p></div>
+      <div class="card"><h3>Отчётов</h3><p id="stat-reports">—</p></div>
+      <div class="card"><h3>Последний отчёт</h3><p id="stat-last">—</p></div>
+    </section>
+
+    <section class="activity">
+      <h2>Активность за 7 дней</h2>
+      <div id="activity-chart" class="chart"></div>
+    </section>
+
+    <section class="categories">
+      <h2>Категории трендов</h2>
+      <div id="categories-list" class="chips"></div>
+    </section>
+
+    <section class="reports">
+      <h2>История отчётов</h2>
+      <div id="reports-list" class="report-grid"></div>
+    </section>
+  </main>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-box">
+      <span class="modal-close" onclick="closeModal()">&times;</span>
+      <h2 id="modal-title">Отчёт</h2>
+      <pre id="modal-body" class="modal-body"></pre>
+    </div>
+  </div>
+
+  <script>
+    let refreshTimer = 15000;
+
+    async function getJSON(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(url + ': ' + res.status);
+      return res.json();
+    }
+
+    async function refresh() {
+      try {
+        const [state, reports] = await Promise.all([
+          getJSON('/api/state'),
+          getJSON('/api/reports'),
+        ]);
+        document.getElementById('stat-processed').textContent = state.processed;
+        document.getElementById('stat-today').textContent = state.today;
+        document.getElementById('stat-reports').textContent = state.reports;
+        document.getElementById('stat-last').textContent =
+          (state.last_report_at || '—').slice(0, 16).replace('T', ' ');
+
+        renderChart(state.last7 || []);
+        renderCategories();
+
+        const list = document.getElementById('reports-list');
+        list.innerHTML = '';
+        for (const r of reports) {
+          const div = document.createElement('div');
+          div.className = 'report-card';
+          div.innerHTML = `
+            <div class="report-head">
+              <span class="report-id">#${r.id}</span>
+              <span class="report-date">${(r.created_at || '').slice(0,16).replace('T',' ')}</span>
+            </div>
+            <div class="report-meta">${esc(r.model || '—')} · ${esc(String(r.news_count ?? 0))} новостей</div>
+            <div class="report-overview">${esc((r.overview || '—'))}</div>
+            <button class="view-btn" onclick="showReport(${r.id})">Открыть</button>`;
+          list.appendChild(div);
+        }
+
+        const status = document.getElementById('job-status');
+        const btn = document.getElementById('run-btn');
+        if (state.job.running) {
+          status.textContent = '⏳ Анализ выполняется…';
+          btn.disabled = true;
+          refreshTimer = 3000;
+        } else {
+          status.textContent = state.job.last_error ? '❌ ' + state.job.last_error : '';
+          btn.disabled = false;
+          refreshTimer = 15000;
+        }
+      } catch (e) {
+        document.getElementById('job-status').textContent = '⚠️ Нет связи с сервером';
+      }
+    }
+
+    function renderChart(rows) {
+      const el = document.getElementById('activity-chart');
+      if (!rows.length) { el.innerHTML = '<p class="muted">Пока нет данных</p>'; return; }
+      const max = Math.max(...rows.map(r => r.count), 1);
+      el.innerHTML = rows.map(r => `
+        <div class="bar-wrap" title="${r.day}: ${r.count}">
+          <div class="bar" style="height:${Math.round(r.count / max * 100)}%"></div>
+          <div class="bar-label">${r.day.slice(5)}</div>
+        </div>`).join('');
+    }
+
+    async function renderCategories() {
+      const el = document.getElementById('categories-list');
+      let cats = {};
+      try { cats = await getJSON('/api/categories'); } catch (e) { return; }
+      const total = Object.values(cats).reduce((a, b) => a + b, 0);
+      if (!total) { el.innerHTML = '<p class="muted">Пока нет данных</p>'; return; }
+      const sorted = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+      el.innerHTML = sorted.map(([cat, n]) => `
+        <span class="chip">${esc(cat)} · ${n} <small>(${Math.round(n / total * 100)}%)</small></span>`).join('');
+    }
+
+    async function runAnalysis() {
+      try {
+        const res = await fetch('/analyze', { method: 'POST' });
+        const data = await res.json();
+        if (!data.ok) { document.getElementById('job-status').textContent = '⚠️ ' + data.error; }
+        else { refresh(); }
+      } catch (e) {
+        document.getElementById('job-status').textContent = '⚠️ Не удалось запустить анализ';
+      }
+    }
+
+    async function showReport(id) {
+      try {
+        const r = await getJSON('/api/report/' + id);
+        document.getElementById('modal-title').textContent = 'Отчёт #' + id;
+        document.getElementById('modal-body').textContent = r.content || 'Пусто';
+        document.getElementById('modal').classList.remove('hidden');
+      } catch (e) {
+        alert('Не удалось загрузить отчёт #' + id);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+    }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    function scheduleRefresh() {
+      setTimeout(async () => { await refresh(); scheduleRefresh(); }, refreshTimer);
+    }
+    refresh();
+    scheduleRefresh();
+  </script>
+</body>
+</html>

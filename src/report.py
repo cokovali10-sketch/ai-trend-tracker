@@ -8,7 +8,7 @@ from datetime import datetime
 from html import escape
 from typing import Optional
 
-from src.ai_analyzer import AnalysisResult, Trend
+from src.ai_analyzer import AnalysisResult
 from src.config import settings, path_for
 from src.logging_conf import get_logger
 

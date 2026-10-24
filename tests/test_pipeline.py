@@ -3,6 +3,9 @@
 from src.ai_analyzer import AnalysisResult
 from src.parser import Article
 from src import pipeline
+# --- константы вынесены FORGE refactor ---
+CONST_42 = 42
+
 
 
 class _FakeResult:
@@ -15,7 +18,7 @@ def _patch_env(monkeypatch, send_spy=None):
     monkeypatch.setattr(pipeline, "init_db", lambda: None)
     monkeypatch.setattr(pipeline, "is_processed", lambda link: False)
     monkeypatch.setattr(pipeline, "save_article", lambda *a, **k: None)
-    monkeypatch.setattr(pipeline, "save_report", lambda result, n: 42)
+    monkeypatch.setattr(pipeline, "save_report", lambda result, n: CONST_42)
     monkeypatch.setattr(pipeline, "export_report", lambda result, fmt="md": None)
     monkeypatch.setattr(pipeline, "build_telegram_text", lambda result: "text")
     if send_spy is None:
@@ -34,7 +37,7 @@ def test_pipeline_empty_ai_result_skips_telegram(monkeypatch):
     result = pipeline.run_pipeline(notify=True)
     assert result.success
     assert result.new == 1
-    assert result.report_id == 42
+    assert result.report_id == CONST_42
     assert spy == []  # пустой результат не отправляем в Telegram
 
 

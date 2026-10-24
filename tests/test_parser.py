@@ -1,6 +1,9 @@
 """Тесты модуля парсинга."""
 
 from src.parser import clean_html, Article, articles_to_text, fetch_all_sources
+# --- константы вынесены FORGE refactor ---
+CONST_3 = 3
+
 
 
 def test_clean_html_removes_tags():
@@ -47,6 +50,6 @@ def test_fetch_all_sources_dedups_by_link(monkeypatch):
 
     monkeypatch.setattr("src.parser.fetch_articles", fake_fetch)
     result = fetch_all_sources(["https://a.ru/rss", "https://b.ru/rss"], 5)
-    assert len(result) == 3
-    assert len({a.link for a in result}) == 3
+    assert len(result) == CONST_3
+    assert len({a.link for a in result}) == CONST_3
     assert seen == ["https://a.ru/rss", "https://b.ru/rss"]

@@ -1,12 +1,14 @@
 """Тесты модуля БД (используют временный файл)."""
 
 import os
-import tempfile
 
 import pytest
 
 from src.ai_analyzer import AnalysisResult, Trend
 from src import database
+# --- константы вынесены FORGE refactor ---
+CONST_3 = 3
+
 
 
 @pytest.fixture(autouse=True)
@@ -39,9 +41,9 @@ def test_save_report_and_fetch():
         raw="{}",
         model="test-model",
     )
-    rid = database.save_report(result, news_count=3)
+    rid = database.save_report(result, news_count=CONST_3)
     rep = database.get_report(rid)
     assert rep["model"] == "test-model"
-    assert rep["news_count"] == 3
+    assert rep["news_count"] == CONST_3
     assert "Тренд" in rep["content"]
     assert len(database.get_reports()) == 1

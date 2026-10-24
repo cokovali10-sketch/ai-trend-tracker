@@ -11,7 +11,7 @@ from src.config import settings
 from src.logging_conf import get_logger
 from src.parser import fetch_all_sources, articles_to_text
 from src.ai_analyzer import analyze, AnalysisResult, QuotaExhaustedError, MissingApiKeyError
-from src.database import init_db, is_processed, save_article, save_report, get_processed_count
+from src.database import init_db, is_processed, save_article, save_report
 from src.notifier import send_telegram
 from src.report import build_telegram_text, export_report
 

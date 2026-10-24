@@ -11,9 +11,9 @@ import os
 import threading
 import time
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template
 
-from src.config import settings, path_for
+from src.config import settings
 from src.logging_conf import setup_logging, get_logger
 from src.database import init_db, get_stats, get_reports, get_report
 from src.pipeline import run_pipeline

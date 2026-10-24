@@ -20,6 +20,9 @@ from google.genai import types, errors as genai_errors
 
 from src.config import settings
 from src.logging_conf import get_logger
+# --- константы вынесены FORGE refactor ---
+CONST_0_3 = 0.3
+
 
 log = get_logger("ai")
 
@@ -162,7 +165,7 @@ def analyze_with_openai(articles_text: str) -> tuple[str, str]:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"Статьи для анализа:\n\n{articles_text}"},
         ],
-        temperature=0.3,
+        temperature=CONST_0_3,
         response_format={"type": "json_object"},
     )
     return response.choices[0].message.content, model
@@ -184,7 +187,7 @@ def analyze_with_gemini(articles_text: str) -> tuple[str, str]:
                     system_instruction=SYSTEM_PROMPT,
                     response_mime_type="application/json",
                     response_schema=_gemini_response_schema(),
-                    temperature=0.3,
+                    temperature=CONST_0_3,
                 ),
             )
             return response.text

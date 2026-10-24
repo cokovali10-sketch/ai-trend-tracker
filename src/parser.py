@@ -10,13 +10,16 @@ import feedparser
 import requests
 
 from src.logging_conf import get_logger
+# --- константы вынесены FORGE refactor ---
+CONST_15 = 15
+
 
 log = get_logger("parser")
 
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
 
-_HTTP_TIMEOUT = 15  # секунд
+_HTTP_TIMEOUT = CONST_15  # секунд
 _USER_AGENT = "Mozilla/5.0 (AI-Trend-Tracker/2.0; +https://github.com)"
 
 
@@ -49,7 +52,7 @@ def _fetch_feed_bytes(rss_url: str) -> bytes:
     return resp.content
 
 
-def fetch_articles(rss_url: str, max_count: int = 15) -> list[Article]:
+def fetch_articles(rss_url: str, max_count: int = CONST_15) -> list[Article]:
     """Парсит одну RSS-ленту и возвращает до max_count статей."""
     log.info("Парсим источник: %s", rss_url)
     try:
@@ -79,7 +82,7 @@ def fetch_articles(rss_url: str, max_count: int = 15) -> list[Article]:
     return articles
 
 
-def fetch_all_sources(urls: list[str], max_count_per_source: int = 15) -> list[Article]:
+def fetch_all_sources(urls: list[str], max_count_per_source: int = CONST_15) -> list[Article]:
     """Собирает статьи из всех источников, убирая дубликаты по ссылке."""
     seen: set[str] = set()
     result: list[Article] = []

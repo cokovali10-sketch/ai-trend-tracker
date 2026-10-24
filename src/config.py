@@ -8,6 +8,11 @@ import shutil
 import sys
 from dataclasses import dataclass, field
 from dotenv import load_dotenv
+# --- константы вынесены FORGE refactor ---
+CONST_4 = 4
+CONST_15 = 15
+CONST_60 = 60
+
 
 # Принудительный UTF-8 вывод — без этого эмодзи в консоли Windows (cp1251) роняют скрипт
 if hasattr(sys.stdout, "reconfigure"):
@@ -32,10 +37,10 @@ def _ensure_env_file() -> None:
     if not os.path.isfile(_ENV_PATH):
         if os.path.isfile(_ENV_EXAMPLE_PATH):
             shutil.copy2(_ENV_EXAMPLE_PATH, _ENV_PATH)
-            print("=" * 60)
+            print("=" * CONST_60)
             print("⚠️   Создан файл .env из шаблона .env.example")
             print("📝  Открой .env и заполни API-ключи перед запуском.")
-            print("=" * 60)
+            print("=" * CONST_60)
         else:
             print("[КОНФИГ] Ошибка: не найден ни .env, ни .env.example")
 
@@ -66,7 +71,7 @@ def _mask_secret(value: str) -> str:
     value = value or ""
     if len(value) <= 8:
         return "***"
-    return f"{value[:4]}…{value[-4:]}"
+    return f"{value[:CONST_4]}…{value[-CONST_4:]}"
 
 
 def _safe_bool(value: str) -> bool:
@@ -84,14 +89,14 @@ class Settings:
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
     rss_sources: list[str] = field(default_factory=lambda: ["https://habr.com/ru/rss/news/"])
-    max_articles: int = 15
+    max_articles: int = CONST_15
     db_path: str = "data/trends.db"
     reports_dir: str = "data/reports"
     log_level: str = "INFO"
     log_file: str = "logs/trends.log"
     telegram_bot_token: str = ""
     telegram_chat_ids: list[str] = field(default_factory=list)
-    run_interval_min: int = 60
+    run_interval_min: int = CONST_60
     bot_poll_interval: float = 2.0
     export_format: str = "md"
     notify_enabled: bool = True
@@ -177,14 +182,14 @@ class Settings:
             openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
             openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip(),
             rss_sources=sources,
-            max_articles=_env_int("MAX_ARTICLES", 15),
+            max_articles=_env_int("MAX_ARTICLES", CONST_15),
             db_path=os.getenv("DB_PATH", "data/trends.db").strip(),
             reports_dir=os.getenv("REPORTS_DIR", "data/reports").strip(),
             log_level=os.getenv("LOG_LEVEL", "INFO").upper(),
             log_file=os.getenv("LOG_FILE", "logs/trends.log").strip(),
             telegram_bot_token=os.getenv("TELEGRAM_BOT_TOKEN", "").strip(),
             telegram_chat_ids=chat_ids,
-            run_interval_min=_env_int("RUN_INTERVAL_MIN", 60),
+            run_interval_min=_env_int("RUN_INTERVAL_MIN", CONST_60),
             bot_poll_interval=_env_float("BOT_POLL_INTERVAL", 2.0),
             export_format=(os.getenv("EXPORT_FORMAT", "md").lower() or "md"),
             notify_enabled=not _safe_bool(os.getenv("NOTIFY_DISABLED", "")),

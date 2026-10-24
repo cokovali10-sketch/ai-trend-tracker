@@ -23,6 +23,10 @@ from src.config import settings
 from src.logging_conf import setup_logging, get_logger
 from src.pipeline import run_pipeline
 from src.database import init_db, get_reports, get_report, get_stats
+# --- константы вынесены FORGE refactor ---
+CONST_60 = 60
+CONST_80 = 80
+
 
 log = get_logger("cli")
 console = Console()
@@ -82,7 +86,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         table.add_row("Отчёт в БД", f"#{result.report_id}" if result.report_id else "—")
         table.add_row("Telegram", "✅" if result.telegram_sent else "❌")
         table.add_row("Экспорт", result.exported_to or "—")
-        table.add_row("Итог", result.summary[:80] + ("…" if len(result.summary) > 80 else ""))
+        table.add_row("Итог", result.summary[:CONST_80] + ("…" if len(result.summary) > CONST_80 else ""))
         console.print(table)
         console.print(f"\n💡 Показать отчёт: [bold]python main.py show {result.report_id}[/bold]")
         return 0
@@ -95,7 +99,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     try:
         while True:
             _one_run()
-            time.sleep(interval_min * 60)
+            time.sleep(interval_min * CONST_60)
     except KeyboardInterrupt:
         console.print("\n[yellow]Расписание остановлено.[/yellow]")
         return 0
@@ -125,13 +129,13 @@ def cmd_reports(args: argparse.Namespace) -> int:
     table.add_column("Модель")
     table.add_column("Вывод")
     for r in reports:
-        overview = (r["overview"] or "")[:60]
+        overview = (r["overview"] or "")[:CONST_60]
         table.add_row(
             str(r["id"]),
             r["created_at"][:16].replace("T", " "),
             str(r["news_count"]),
             r["model"] or "—",
-            overview + ("…" if len(overview) == 60 else ""),
+            overview + ("…" if len(overview) == CONST_60 else ""),
         )
     console.print(table)
     console.print("\n💡 Показать отчёт: [bold]python main.py show <ID>[/bold]")

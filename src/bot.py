@@ -21,7 +21,9 @@ from src.config import settings
 from src.logging_conf import get_logger
 from src.pipeline import run_pipeline
 from src.database import get_stats, get_reports, get_report
-from src.report import build_telegram_text
+# --- константы вынесены FORGE refactor ---
+CONST_5 = 5
+
 
 log = get_logger("bot")
 
@@ -85,7 +87,7 @@ def _handle(chat_id: str, text: str) -> None:
               f"Последний отчёт: {s['last_report_at'] or '—'}")
 
     elif cmd == "/recent":
-        reps = get_reports(5)
+        reps = get_reports(CONST_5)
         if not reps:
             _send(chat_id, "Отчётов пока нет. Отправь /today.")
             return
@@ -133,8 +135,8 @@ def run_bot(poll_interval: float = 2.0) -> None:
                     _handle(chat_id, text)
         except requests.exceptions.RequestException as e:
             log.error("Ошибка long-polling: %s", e)
-            time.sleep(5)
+            time.sleep(CONST_5)
         except Exception as e:  # noqa: BLE001
             log.error("Непредвиденная ошибка: %s", e)
-            time.sleep(5)
+            time.sleep(CONST_5)
         time.sleep(poll_interval)
